@@ -8,19 +8,35 @@ ROOT_DOMAIN = "https://es.wikipedia.org/"
 WKP_CT_SUMMARY_API = 'application/json; charset=utf-8; profile="https://www.mediawiki.org/wiki/Specs/Summary/1.4.2"'
 WKP_CT_HTML = 'text/html; charset=UTF-8'
 WKP_SUMMARY_API_KEYS_2_TRANSC = ["title", "displaytitle", "description", "extract", "extract_html"]
-WKP_HTML_TAGS_2_TRANS = ["span", "h1", "h2", "h3", "h4", "h5"]
-WKP_HTML_TAGS_2_TRANS_WITH_CH = ["p", "th"]
-
+NOT_TRANSCRIBABLE_ELEMENTS = ["style", "script"]
 
 flask_app = Flask(__name__)
 
 
 def transcribe(text, vaf='ç', vvf='h'):
+    """
+
+    TODO: Check if it contains html
+    :param text:
+    :param vaf:
+    :param vvf:
+    :return:
+    """
     transcription = andaluh.epa(text, vaf=vaf, vvf=vvf)
     return transcription
 
 
 def transcribe_elem_text(elem, vaf, vvf):
+    """
+
+    :param elem:
+    :param vaf:
+    :param vvf:
+    :return:
+    """
+    if elem.name in NOT_TRANSCRIBABLE_ELEMENTS:
+        return
+
     if hasattr(elem, "string") and elem.string and not isinstance(elem.string, Comment):
         elem.string.replaceWith(transcribe(elem.string, vaf=vaf, vvf=vvf))
 
@@ -31,18 +47,14 @@ def transcribe_elem_text(elem, vaf, vvf):
 
 
 def transcribe_html(html_content, vaf="ç", vvf="h"):
-    soup = BeautifulSoup(html_content, "lxml")
+    """
 
-    # for tag in WKP_HTML_TAGS_2_TRANS:
-    #     for elem in soup.find_all(tag):
-    #         if elem.string:
-    #             elem.string.replaceWith(transcribe(elem.string, vaf=vaf, vvf=vvf))
-    #
-    # for tag in WKP_HTML_TAGS_2_TRANS_WITH_CH:
-    #     for elem_parent in soup.find_all(tag):
-    #         for ch in elem_parent.children:
-    #             if ch.string:
-    #                 ch.string.replaceWith(transcribe(ch.string, vaf=vaf))
+    :param html_content:
+    :param vaf:
+    :param vvf:
+    :return:
+    """
+    soup = BeautifulSoup(html_content, "lxml")
 
     transcribe_elem_text(soup.body, vaf=vaf, vvf=vvf)
 
@@ -50,13 +62,17 @@ def transcribe_html(html_content, vaf="ç", vvf="h"):
 
 
 def prepare_content(req):
+    """
+
+    :param req:
+    :return:
+    """
     if req.headers.get("Content-Type") == WKP_CT_SUMMARY_API:
         content_dict = json.loads(req.content)
 
         for key in WKP_SUMMARY_API_KEYS_2_TRANSC:
-            if key is "extract_html":
+            if key in content_dict:
                 content_dict[key] = transcribe(content_dict[key])
-            content_dict[key] = transcribe(content_dict[key])
 
         content = json.dumps(content_dict, ensure_ascii=False).encode("utf-8")
     elif req.headers.get("Content-Type") == WKP_CT_HTML:
@@ -70,6 +86,12 @@ def prepare_content(req):
 @flask_app.route('/', defaults={'url_path': ''})
 @flask_app.route('/<path:url_path>', methods=["GET", "POST"])
 def get_request(url_path):
+    """
+    Base request to manage all the request to the site
+
+    :param url_path:
+    :return:
+    """
     target_url = ROOT_DOMAIN + url_path
     http_method = requests.post if request.method == 'POST' else requests.get
 
