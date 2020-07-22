@@ -1,5 +1,6 @@
 import requests
 from bs4 import BeautifulSoup, Comment
+from bs4.element import NavigableString
 from flask import Flask, request, Response
 import andaluh
 import json
@@ -37,7 +38,8 @@ def transcribe_elem_text(elem, vaf, vvf):
     if elem.name in NOT_TRANSCRIBABLE_ELEMENTS:
         return
 
-    if hasattr(elem, "string") and elem.string and not isinstance(elem.string, Comment):
+    if isinstance(elem, NavigableString) and hasattr(elem, "string") and elem.string \
+            and not isinstance(elem.string, Comment) and elem.string is not "\n":
         elem.string.replaceWith(transcribe(elem.string, vaf=vaf, vvf=vvf))
 
     if hasattr(elem, "children"):
