@@ -56,6 +56,7 @@ def transcribe_html(html_content, vaf="ç", vvf="h"):
     """
     soup = BeautifulSoup(html_content, "lxml")
 
+    transcribe_elem_text(soup.head.title, vaf=vaf, vvf=vvf)
     transcribe_elem_text(soup.body, vaf=vaf, vvf=vvf)
 
     return str(soup)
