@@ -5,6 +5,8 @@ from flask import Flask, request, Response
 import andaluh
 import json
 
+from cachetools import cached, LRUCache, TTLCache
+
 ROOT_DOMAIN = "https://es.wikipedia.org/"
 WKP_CT_SUMMARY_API = 'application/json; charset=utf-8; profile="https://www.mediawiki.org/wiki/Specs/Summary/1.4.2"'
 WKP_CT_HTML = 'text/html; charset=UTF-8'
@@ -13,7 +15,10 @@ NOT_TRANSCRIBABLE_ELEMENTS = ["style", "script"]
 
 flask_app = Flask(__name__)
 
+cache = TTLCache(maxsize=500, ttl=60)
 
+
+@cached(cache)
 def transcribe(text, vaf='ç', vvf='h'):
     """
 
@@ -48,6 +53,7 @@ def transcribe_elem_text(elem, vaf, vvf):
                 transcribe_elem_text(ch, vaf, vvf)
 
 
+@cached(cache)
 def transcribe_html(html_content, vaf="ç", vvf="h"):
     """
 
@@ -88,6 +94,7 @@ def prepare_content(req):
 
 @flask_app.route('/', defaults={'url_path': ''})
 @flask_app.route('/<path:url_path>', methods=["GET", "POST"])
+# @cache.cached(timeout=50)
 def get_request(url_path):
     """
     Base request to manage all the request to the site
@@ -117,4 +124,4 @@ def get_request(url_path):
 
 
 if __name__ == '__main__':
-    flask_app.run(debug=True, host="0.0.0.0", port=5000)
+    flask_app.run(debug=False, host="0.0.0.0", port=5000)
