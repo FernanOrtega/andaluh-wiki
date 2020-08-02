@@ -47,8 +47,8 @@ def transcribe_elem_text(elem, vaf, vvf):
     if elem.name in NOT_TRANSCRIBABLE_ELEMENTS:
         return
 
-    if isinstance(elem, NavigableString) and hasattr(elem, "string") and elem.string \
-            and not isinstance(elem.string, Comment) and elem.string is not "\n":
+    if isinstance(elem, NavigableString) and hasattr(elem, "string") and not isinstance(elem.string, Comment) \
+            and elem.string is not "\n":
         elem.string.replaceWith(transcribe(elem.string, vaf=vaf, vvf=vvf))
 
     if hasattr(elem, "children"):
@@ -98,7 +98,6 @@ def prepare_content(req):
 
 @flask_app.route('/', defaults={'url_path': ''})
 @flask_app.route('/<path:url_path>', methods=["GET", "POST"])
-# @cache.cached(timeout=50)
 def get_request(url_path):
     """
     Base request to manage all the request to the site
